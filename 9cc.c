@@ -5,26 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// トークンの種類
-typedef enum {
-    TK_RESERVED,    // 記号
-    TK_NUM,         // 整数トークン
-    TK_EOF,         // 入力の終わりを表すトークン
-} TokenKind;
-
-typedef struct Token Token;
-
-// トークン型
-struct Token {
-    TokenKind kind; // トークンの型
-    Token *next;    // 次の入力トークン
-    int val;        // kindがTK_NUMの場合、その数値
-    char *str;      // トークン文字列
-};
-
-// 現在着目しているトークン
-Token *token;
-
 // 入力プログラム
 char *user_input;
 
@@ -51,6 +31,26 @@ void error_at(char *loc, char *fmt, ...) {
     fprintf(stderr, "\n");
     exit(1);
 }
+
+// トークンの種類
+typedef enum {
+    TK_RESERVED,    // 記号
+    TK_NUM,         // 整数トークン
+    TK_EOF,         // 入力の終わりを表すトークン
+} TokenKind;
+
+typedef struct Token Token;
+
+// トークン型
+struct Token {
+    TokenKind kind; // トークンの型
+    Token *next;    // 次の入力トークン
+    int val;        // kindがTK_NUMの場合、その数値
+    char *str;      // トークン文字列
+};
+
+// 現在着目しているトークン
+Token *token;
 
 // 次のトークンが期待している記号のときには、トークンを1つ読み進めて
 // 真を返す。それ以外の場合には偽を返す。
@@ -165,6 +165,7 @@ Node *new_num(int val) {
 
 Node *expr();
 Node *mul();
+Node *unary();
 Node *primary();
 
 // expr = mul ("+" mul | "-" mul)*
@@ -183,16 +184,25 @@ Node *expr() {
 
 // mul = primary ("*" primary | "/" primary)*
 Node *mul() {
-    Node *node = primary();
+    Node *node = unary();
     
     for (;;) {
         if (consume('*'))
-            node = new_binary(ND_MUL, node, primary());
+            node = new_binary(ND_MUL, node, unary());
         else if (consume('/'))
-            node = new_binary(ND_DIV, node, primary());
+            node = new_binary(ND_DIV, node, unary());
         else 
             return node;
     }
+}
+
+// unary = ("+" | "-")? primary
+Node *unary() {
+    if (consume('+'))
+        return primary();
+    else if (consume('-'))
+        return new_binary(ND_SUB, new_num(0), primary());
+    return primary();
 }
 
 // primary = "(" expr ")" | num
