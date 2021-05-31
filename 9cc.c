@@ -182,7 +182,7 @@ Node *expr() {
     }
 }
 
-// mul = primary ("*" primary | "/" primary)*
+// mul = unary ("*" unary | "/" unary)*
 Node *mul() {
     Node *node = unary();
     
@@ -196,12 +196,12 @@ Node *mul() {
     }
 }
 
-// unary = ("+" | "-")? primary
+// unary = ("+" | "-")? unary | primary
 Node *unary() {
     if (consume('+'))
-        return primary();
+        return unary();
     else if (consume('-'))
-        return new_binary(ND_SUB, new_num(0), primary());
+        return new_binary(ND_SUB, new_num(0), unary());
     return primary();
 }
 
